@@ -6,11 +6,11 @@
 #define GEAR 8
 
 // Шаг двигателя 
-#define STEP_PIN 5
+#define STEP_PIN 4
 // Напрваление вращения
 #define DIR_PIN 6
 // Включение двигателя
-#define EN_PIN 7
+#define EN_PIN 3
 
 // переменная плавного пуска, останова - каждый раз скорость за каждый шаг в уменьшается при торможении, 
 // при ускорении увеличивается 
@@ -95,10 +95,16 @@ void heartBeat()
   }
   
 void setup() {
-  // put your setup code here, to run once:
-  for (int i = STEP_PIN; i <= EN_PIN; ++i)
-      pinMode(i, OUTPUT);
-  //инициализация подключения
+ 
+ //когда нужно включить шаговый двигатель (и возможно удерживать)
+      pinMode(EN_PIN, OUTPUT);
+      
+ //PIN ответственный за каждый шаг      
+      pinMode(STEP_PIN, OUTPUT); 
+ 
+ //пин определяющий направление вращения
+      pinMode(DIR_PIN, OUTPUT);
+  //подключение к рабочему месту    
   Serial.begin(9600);
   
   Serial.println("\n\nTable with stepper motor. i360 Project \n");
