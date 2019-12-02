@@ -1,3 +1,5 @@
+import os.path
+
 # команды получаем из очереди при подключении к БД
 # статус кладем тудаже 
 # файлы с илюстрациями сохраняем на диск
@@ -78,7 +80,12 @@ def makePhoto()
     Photo_id = getPhotoId()
     pass
 
+
+def pause()
+    while os.path.exists(PAUSE_FILE):
+	pass
     
+        
 def makeHDR()
     # фотоаппарат должен быть выставлен в режим брекетеринга, и три кадра и на диск и в базу    
     HDR_id = getHDRid()
