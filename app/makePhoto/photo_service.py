@@ -1,5 +1,5 @@
-import os.path
-
+import os.path # for fileexists options
+from time import sleep # for pause options
 # команды получаем из очереди при подключении к БД
 # статус кладем тудаже 
 # файлы с илюстрациями сохраняем на диск
@@ -39,9 +39,9 @@ commands = { "ringPhoto32" : ringPhoto32(),
 
 #текущий номер последовательности для HDR из трех кадров (номер записи после вставки в БД)
 
-timer = 0; // инструмент построения таймера 
+timer = 0; # инструмент построения таймера 
 
-// жив ли контроллер управления, получен ли от него ответ в течение LIVE_TIMEOUT
+# жив ли контроллер управления, получен ли от него ответ в течение LIVE_TIMEOUT
 ctrl_alive = False;
 
 current_hdr = 1 
@@ -82,8 +82,10 @@ def makePhoto()
 
 
 def pause()
+    # sleep one second while file exists
     while os.path.exists(PAUSE_FILE):
-	pass
+	sleep(1)
+	print('.', end='')
     
         
 def makeHDR()
