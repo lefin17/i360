@@ -18,6 +18,8 @@ DB_HOST = "localhost"
 DB_PASS = ""
 DB_BASE = "i360"
 
+CAMERAS = 1
+
 # название рабочего места на которое приходят команды управления
 # 
 SERVICE_NAME = "NOTE-1" # имя запущенного сервиса с подключенным оборудованием (месту даются задания)
@@ -39,14 +41,6 @@ APP = "/home/lefin/work/i360"
 #	   "back" : "/b/[i]"
 #	   }
 #	   
-#commands = { "ringPhoto32" : ringPhoto32(),
-#	     "ringHDR32" : ringHDR32(),
-#	     "testPhoto" : testPhoto(),
-#	     "testHDR" : testHDR(),
-#	     "backPhoto" : backPhoto(),
-#	     "backHDR" : backHDR() }
-	         
-
 #текущий номер последовательности для HDR из трех кадров (номер записи после вставки в БД)
 
 timer = 0; # инструмент построения таймера 
@@ -77,18 +71,25 @@ def getOption(options, key)
     pass  # проверка рабочих параметров передаваемых переменных
 
 def makePhoto(issue_id, options)
-    
+    initCTRL(["delay" => "8", "Steps" = 50]) # инициализация контроллера, по хорошему сюда скорость и настройки из БД
     sequence = getOption(options, 'sequence')
     cameras = getOption(options, 'cameras')
     # тут нужно деление по объекту съемки (тест, фон, продукт)
     product = getOption(options, 'product')
-    photo_type = getOption(options, 'photo_type')
-    photos_by_step = getPhotosByStep(photo_type);
-    
-    for s in range(sequence):
-	for c in range(cameras)
-	    for t in range(photos_by_step)
-		
+    photo_type = getOption(options, 'photo_type') # hdr or simply 
+    photos_by_step = getPhotosByStep(photo_type)
+    photo_object = getOption(options, 'object') # product, background (table), test 
+
+    for s in range(sequence): #each step need to make photo
+	for c in range(cameras): #if few cameras in table //but here we must use the specific comport
+	    for t in range(photos_by_step): #photo for hdr
+		if (photo_object == 'product')
+		    path = "/i/" + photo_object + "/" + indexPath(product_id)
+		else if (photo_object == 'background')
+		    
+		else # test one
+		    path = "/i/test/" + issue_id + "_cam" + c + "_" + photo_type    
+		runPhoto(c, path) # for photo we must to know witch camera is used    
 	pause()
 	if (sequence == 1) break
 	makeStep(); 
@@ -101,39 +102,11 @@ def pause()
 	print('.', end='')
     
         
-def makeHDR()
-    # фотоаппарат должен быть выставлен в режим брекетеринга, и три кадра и на диск и в базу    
-    HDR_id = getHDRid()
-    for i in range(3)
-	makePhoto(["HDR" => HDR_id])
-	pause()
-	    
-
 # функция шага двигателя    
 def makeStep()
     # передать контроллеру команду RUN
     pass
 
-
-def ringHDR32()
-    initCTRL(["delay" => "8", "Steps" = 50])
-    for i in range(32):
-	path 
-	pause()
-	makeHRD()
-	pause()
-	makeStep()
-	
-
-def ringPhoto32()
-# all settings from sql and if we have empty in sql then use default one
-    initCTRL(["delay" => "8", "Steps" = 50])
-    for i in range(32):
-	pause()
-	makePhoto()
-	pause()
-	makeStep()
-	
 
 def start()
     # фиксация того, что процедура стартовала и остальные потоки блокировались к запуску
