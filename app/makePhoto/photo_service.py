@@ -7,13 +7,23 @@ from time import sleep # for pause options
 # программа выполняет одну не отработанную команду из очереди в БД на локацию
 # возможно игра в паузу (например через управляющий файл, или вспомогательные команды на локацию)
 
+# 2019-12-04 
+# s
+# - product path: i/p/[product_id]/[issue_id]-[location_name]-[phototype](-[sequence])(-cams[cameras])(/cam[camera_index])/[product_id]_[issue_id](_cam[camera_id])(_sequence_index)(_[phototype_index]).jpg
+# - test path i/t/[issue_id]-[photo_type](-[squence])
+# - location: i/l/[issue_id]-[location_name]
+
 DB_NAME = "i360"
 DB_HOST = "localhost"
 DB_PASS = ""
 DB_BASE = "i360"
 
 # название рабочего места на которое приходят команды управления
-LOCATION_NAME = "White"
+# 
+SERVICE_NAME = "NOTE-1" # имя запущенного сервиса с подключенным оборудованием (месту даются задания)
+
+# LOCATION_NAME = "WHITE" # имя рабочего стола (может быть черным, белым, может быть для зонтов, еще что-то (стол как и фон готовится фотографом)
+# location - уехал в настройки съемки через sql
 
 # если в заданный промежуток времени не пришло ответа от управляющего воздействия - ошибка
 LIVE_TIMEOUT = 30
@@ -24,17 +34,17 @@ PAUSE_FILE = "/tmp/pause.tmp"
 
 APP = "/home/lefin/work/i360"
 
-pathes = { "testPhoto" : "/test/[i]",
-	   "photo" : "/p/[i]",
-	   "back" : "/b/[i]",
-	   "hdr" : "/h" }
-	   
-commands = { "ringPhoto32" : ringPhoto32(),
-	     "ringHDR32" : ringHDR32(),
-	     "testPhoto" : testPhoto(),
-	     "testHDR" : testHDR(),
-	     "backPhoto" : backPhoto(),
-	     "backHDR" : backHDR() }
+#pathes = { "test" : "/test/[i]",
+#	   "product" : "/p/[i]",
+#	   "back" : "/b/[i]"
+#	   }
+#	   
+#commands = { "ringPhoto32" : ringPhoto32(),
+#	     "ringHDR32" : ringHDR32(),
+#	     "testPhoto" : testPhoto(),
+#	     "testHDR" : testHDR(),
+#	     "backPhoto" : backPhoto(),
+#	     "backHDR" : backHDR() }
 	         
 
 #текущий номер последовательности для HDR из трех кадров (номер записи после вставки в БД)
@@ -43,10 +53,6 @@ timer = 0; # инструмент построения таймера
 
 # жив ли контроллер управления, получен ли от него ответ в течение LIVE_TIMEOUT
 ctrl_alive = False;
-
-current_hdr = 1 
- 
-current_photo = 1
 
 def indexPath(number)
     # формируем путь из индекса согласно следованию по числу
@@ -67,18 +73,25 @@ def newPath(cmd)
 	print('no path in dictionary for command {}'.format(cmd))
     return path 
 
-def getHDR_ID()
-    # получить индекс HDR (просто так последовательно присваивать нельзя из-за паралельных съемок)
-    pass 
+def getOption(options, key)
+    pass  # проверка рабочих параметров передаваемых переменных
 
+def makePhoto(issue_id, options)
     
-def getPhoto_ID()
-    # получить индекс фото, далее 
-
-
-def makePhoto()
-    Photo_id = getPhotoId()
-    pass
+    sequence = getOption(options, 'sequence')
+    cameras = getOption(options, 'cameras')
+    # тут нужно деление по объекту съемки (тест, фон, продукт)
+    product = getOption(options, 'product')
+    photo_type = getOption(options, 'photo_type')
+    photos_by_step = getPhotosByStep(photo_type);
+    
+    for s in range(sequence):
+	for c in range(cameras)
+	    for t in range(photos_by_step)
+		
+	pause()
+	if (sequence == 1) break
+	makeStep(); 
 
 
 def pause()
@@ -112,11 +125,8 @@ def ringHDR32()
 	makeStep()
 	
 
-def pause()
-    # если есть файл - остановись... если нет - продолжи
-    
-	
 def ringPhoto32()
+# all settings from sql and if we have empty in sql then use default one
     initCTRL(["delay" => "8", "Steps" = 50])
     for i in range(32):
 	pause()
