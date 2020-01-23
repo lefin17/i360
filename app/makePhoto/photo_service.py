@@ -4,10 +4,12 @@ import os.remove # for remove file
 
 from time import sleep # for pause options
 
-# команды получаем из очереди при подключении к БД
+# команды получаем из очереди при подключении к БД (i360_roadmap)
 # статус кладем тудаже 
 # файлы с илюстрациями сохраняем на диск
 # имена файлов могут быть по типу - тест, фото, хдр (хдр + фото), фон (BACK)
+# имена файлов зависят от съемки - номер задания (разделенный по индексу), далее номер камеры cam+i если камер больше 1? опционально,
+# далее при съемки hdr добавляем индекс последовательности для дальнейшей обраотки
 # программа выполняет одну не отработанную команду из очереди в БД на локацию
 # возможно игра в паузу (например через управляющий файл, или вспомогательные команды на локацию)
 
@@ -27,11 +29,20 @@ DB_HOST = "localhost"
 DB_PASS = ""
 DB_BASE = "i360"
 
-CAMERAS = 1
+cameras = 1 # can be changed by load options to roadmap
+
+sequence_steps = 32 # количество шагов в последовательности по умолчанию (в следующей версии можно перенести в файл настроек)
+
+hdr = 1 # может принимать значение (0 || 1) если 0 то без цикла, если 1 - то добавляется индекс к файлам и цикл по брекетингу
+	# можно заменить на кадров на позицию, но тогда немного смысл теряется.
+	
+roadmap_id = 0 # обязательно меняется загрузкой - если остается 0 после функции старта - уходим из программы
 
 # название рабочего места на которое приходят команды управления
-# 
-SERVICE_NAME = "NOTE-1" # имя запущенного сервиса с подключенным оборудованием (месту даются задания)
+# после обработки происходит загрузка в библиотеку - при загрузке в библиотеку - возможно важно на каком рабочем месте выполнены работы, 
+# на самом рабочем месте - данная информация не важна
+ 
+WORKPLACE_NAME = "NOTE-1" # имя запущенного сервиса с подключенным оборудованием (месту даются задания)
 
 # LOCATION_NAME = "WHITE" # имя рабочего стола (может быть черным, белым, может быть для зонтов, еще что-то (стол как и фон готовится фотографом)
 # location - уехал в настройки съемки через sql
@@ -43,34 +54,62 @@ def clear_tmp()
     os.remove(PAUSE_FILE)
     os.remove(RESET_FILE)
     
+def can_start()
+    query_skip = "SELECT `i360_roadmap_id` 
+		  FROM `i360_roadmap` 
+		  WHERE `i360_roadmap_started` = 1 
+		    and `i360_roadmap_finished` = 0 
+		    and `i360_roadmap_workplace` = '" + WORKPLACE_NAME + "'" #command not over
+		  
+		  
+        
 def start_work()
     # read from mysql command and fix that program in started
-    pass
-    
+        query = "SELECT `i360_roadmap_id`
+	     FROM `i360 roadmap`
+	     WHERE  `i360_roadmap_started` = 0 
+		and `i360_roadmap_workplace` = '" + WORKPLACE_NAME + "'" # command not started
+		
+	
+	roadmap_id = 
+	query_start = "UPDATE `i360_roadmap` 
+		       SET `i360_roadmap_stated` = 1, 
+		       `i360_roadmap_started_at` = NOW() 
+		       WHERE `i360_roadmap_id` = '" + roadmap_id + "'"
+	    
+
+def update_work(message, progress)
+    query = "UPDATE `i360_roadmap` 
+	     SET 
+	     `i360_roadmap_updated_at` = NOW(),
+	     `i360_roadmap_message` = '" + message + "',
+	     `i360_roadmap_progress` = '" + progress + "'
+	     WHERE `i360_roadmap_id` = '" + roadmap_id + "'"
+		
 def finish_work()
     # put to database that work is finished
-    
+    query_finish = "UPDATE `i360_roadmap` 
+		    SET `i360_roadmap_finished` = 1, 
+		    `i360_roadmap_started_at` = NOW() 
+		    WHERE `i360_roadmap_id` = '" + roadmap_id + "'"
+
+
 def read_options()    
-    
+    # some options can be read from json from options field in db
+    pass    
     
 
 LIVE_TIMEOUT = 30
 
 APP = "/home/lefin/work/i360";
+
 LOG_PATH = "/log"
 
 PAUSE_FILE = APP + "/tmp/pause.tmp"
 
+PAUSE_REMOVE_FILE = APP + "/tmp/pause_remover.tmp"
+
 RESET_FILE = APP + "/tmp/reset.tmp"
-
-APP = "/home/lefin/work/i360"
-
-#pathes = { "test" : "/test/[i]",
-#	   "product" : "/p/[i]",
-#	   "back" : "/b/[i]"
-#	   }
-#	   
-#текущий номер последовательности для HDR из трех кадров (номер записи после вставки в БД)
 
 timer = 0; # инструмент построения таймера 
 
@@ -99,15 +138,19 @@ def newPath(cmd)
 def getOption(options, key)
     pass  # проверка рабочих параметров передаваемых переменных
 
-def makePhoto(issue_id, options)
+def makePhoto(roadmap_id)
     initCTRL(["delay" => "8", "Steps" = 50]) # инициализация контроллера, по хорошему сюда скорость и настройки из БД
-    sequence = getOption(options, 'sequence')
-    cameras = getOption(options, 'cameras')
+    # sequence = getOption(options, 'sequence') # вот это всё ерунда какая-то... 
+    
+    # cameras = getOption(options, 'cameras')
     # тут нужно деление по объекту съемки (тест, фон, продукт)
-    product = getOption(options, 'product')
-    photo_type = getOption(options, 'photo_type') # hdr or simply 
-    photos_by_step = getPhotosByStep(photo_type)
-    photo_object = getOption(options, 'object') # product, background (table), test 
+    # product = getOption(options, 'product')
+    if hdr = 1: 
+	photos_by_step = 3
+	
+    # photo_type = getOption(options, 'photo_type') # hdr or simply 
+    # photos_by_step = getPhotosByStep(photo_type)
+    # photo_object = getOption(options, 'object') # product, background (table), test 
 
     for s in range(sequence): #each step need to make photo
 	for c in range(cameras): #if few cameras in table //but here we must use the specific comport
@@ -128,7 +171,11 @@ def pause()
     # sleep one second while file exists
     while os.path.exists(PAUSE_FILE):
 	sleep(1)
-	print('.', end='')
+	if os.path.exists(PAUSE_REMOVE_FILE):
+	    os.remove(PAUSE_REMOVE_FILE)
+	    os.remove(PAUSE_FILE)
+	    break
+	print('.', end='') #simulate, possible can be stopped some other way
     
         
 # функция шага двигателя    
@@ -137,11 +184,6 @@ def makeStep()
     pass
 
 
-def start()
-    # фиксация того, что процедура стартовала и остальные потоки блокировались к запуску
-    pass     
-
-    
 def run()
     # run once
     print('Программа для съемки вокруг объекта')
