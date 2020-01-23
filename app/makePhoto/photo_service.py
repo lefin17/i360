@@ -1,5 +1,9 @@
 import os.path # for fileexists options
+
+import os.remove # for remove file 
+
 from time import sleep # for pause options
+
 # команды получаем из очереди при подключении к БД
 # статус кладем тудаже 
 # файлы с илюстрациями сохраняем на диск
@@ -12,6 +16,11 @@ from time import sleep # for pause options
 # - product path: i/p/[product_id]/[issue_id]-[location_name]-[phototype](-[sequence])(-cams[cameras])(/cam[camera_index])/[product_id]_[issue_id](_cam[camera_id])(_sequence_index)(_[phototype_index]).jpg
 # - test path i/t/[issue_id]-[photo_type](-[squence])
 # - location: i/l/[issue_id]-[location_name]
+
+# все снимается по заданию - основное - номер задания.
+# на более высоком уровне идет объединение задания и цели съемки, это может быть пересъемка, к одному продукту может быть 
+# множество различных съемок
+# некоторые съемки могут быть объеденены для различных целей
 
 DB_NAME = "i360"
 DB_HOST = "localhost"
@@ -28,11 +37,31 @@ SERVICE_NAME = "NOTE-1" # имя запущенного сервиса с под
 # location - уехал в настройки съемки через sql
 
 # если в заданный промежуток времени не пришло ответа от управляющего воздействия - ошибка
+
+def clear_tmp()
+    #clear tmp folder from files witch can affect for executaiton of main program
+    os.remove(PAUSE_FILE)
+    os.remove(RESET_FILE)
+    
+def start_work()
+    # read from mysql command and fix that program in started
+    pass
+    
+def finish_work()
+    # put to database that work is finished
+    
+def read_options()    
+    
+    
+
 LIVE_TIMEOUT = 30
 
+APP = "/home/lefin/work/i360";
 LOG_PATH = "/log"
 
-PAUSE_FILE = "/tmp/pause.tmp"
+PAUSE_FILE = APP + "/tmp/pause.tmp"
+
+RESET_FILE = APP + "/tmp/reset.tmp"
 
 APP = "/home/lefin/work/i360"
 
