@@ -1,8 +1,10 @@
 import os.path # for fileexists options
 
-import os.remove # for remove file 
+import os # for remove file 
 
 from time import sleep # for pause options
+
+import pymysql
 
 # команды получаем из очереди при подключении к БД (i360_roadmap)
 # статус кладем тудаже 
@@ -26,8 +28,20 @@ from time import sleep # for pause options
 
 DB_NAME = "i360"
 DB_HOST = "localhost"
-DB_PASS = ""
-DB_BASE = "i360"
+DB_PASS = "nEvMqSM9"
+DB_USER = "user"
+
+LIVE_TIMEOUT = 30
+
+APP = "/home/lefin/work/i360";
+
+LOG_PATH = "/log"
+
+PAUSE_FILE = APP + "/tmp/pause.tmp"
+
+PAUSE_REMOVE_FILE = APP + "/tmp/pause_remover.tmp"
+
+RESET_FILE = APP + "/tmp/reset.tmp"
 
 cameras = 1 # can be changed by load options to roadmap
 
@@ -48,150 +62,143 @@ WORKPLACE_NAME = "NOTE-1" # имя запущенного сервиса с по
 # location - уехал в настройки съемки через sql
 
 # если в заданный промежуток времени не пришло ответа от управляющего воздействия - ошибка
+cur = False
 
-def clear_tmp()
+
+def connect_mysql():
+    con = pymysql.connect(DB_HOST, DB_USER, DB_PASS, DB_NAME)
+    with con:
+        cur = con.cursor()
+
+
+def clear_tmp():
     #clear tmp folder from files witch can affect for executaiton of main program
     os.remove(PAUSE_FILE)
     os.remove(RESET_FILE)
     
-def can_start()
-    query_skip = "SELECT `i360_roadmap_id` 
-		  FROM `i360_roadmap` 
-		  WHERE `i360_roadmap_started` = 1 
-		    and `i360_roadmap_finished` = 0 
-		    and `i360_roadmap_workplace` = '" + WORKPLACE_NAME + "'" #command not over
-		  
-		  
-        
-def start_work()
-    # read from mysql command and fix that program in started
-        query = "SELECT `i360_roadmap_id`
-	     FROM `i360 roadmap`
-	     WHERE  `i360_roadmap_started` = 0 
-		and `i360_roadmap_workplace` = '" + WORKPLACE_NAME + "'" # command not started
-		
+    
+def can_start():
+    # print (cur.query)
+    cur.execute("SELECT `i360_roadmap_id` FROM `i360_roadmap` WHERE `i360_roadmap_started` = 1 and `i360_roadmap_finished` = 0 and `i360_roadmap_workplace` = '%s'", (WORKPLACE_NAME)) #command not over
+    i = cur.rowcount
+    if (i > 0):
+	    res = False
+    else:
+        res = True
+    return res 	  
 	
-	roadmap_id = 
-	query_start = "UPDATE `i360_roadmap` 
-		       SET `i360_roadmap_stated` = 1, 
-		       `i360_roadmap_started_at` = NOW() 
-		       WHERE `i360_roadmap_id` = '" + roadmap_id + "'"
+		          
+def start_work():
+    # read from mysql command and fix that program in started
+    cur.execute("SELECT `i360_roadmap_id` FROM `i360 roadmap` WHERE  `i360_roadmap_started` = 0 and `i360_roadmap_workplace` = '%s'", (WORKPLACE_NAME)) # command not started
+    roadmap_id = cur.fetchone()[0]
+    print (roadmap_id)
+	
+    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_stated` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = '%s'", roadmap_id)
+	#end start_work file	       
 	    
 
-def update_work(message, progress)
-    query = "UPDATE `i360_roadmap` 
-	     SET 
-	     `i360_roadmap_updated_at` = NOW(),
-	     `i360_roadmap_message` = '" + message + "',
-	     `i360_roadmap_progress` = '" + progress + "'
-	     WHERE `i360_roadmap_id` = '" + roadmap_id + "'"
+def update_work(message, progress):
+    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_updated_at` = NOW(), `i360_roadmap_message` = '%s', `i360_roadmap_progress` = '%s' WHERE `i360_roadmap_id` = '%s'", (message, progress, roadmap_id))
+    print ("Update work")     
+	     
 		
-def finish_work()
+def finish_work():
     # put to database that work is finished
-    query_finish = "UPDATE `i360_roadmap` 
-		    SET `i360_roadmap_finished` = 1, 
-		    `i360_roadmap_started_at` = NOW() 
-		    WHERE `i360_roadmap_id` = '" + roadmap_id + "'"
+    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_finished` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = '%s'", (roadmap_id))
+    print ("Finish work")
 
 
-def read_options()    
+def read_options():    
     # some options can be read from json from options field in db
     pass    
     
-
-LIVE_TIMEOUT = 30
-
-APP = "/home/lefin/work/i360";
-
-LOG_PATH = "/log"
-
-PAUSE_FILE = APP + "/tmp/pause.tmp"
-
-PAUSE_REMOVE_FILE = APP + "/tmp/pause_remover.tmp"
-
-RESET_FILE = APP + "/tmp/reset.tmp"
 
 timer = 0; # инструмент построения таймера 
 
 # жив ли контроллер управления, получен ли от него ответ в течение LIVE_TIMEOUT
 ctrl_alive = False;
 
-def indexPath(number)
+def indexPath(number):
     # формируем путь из индекса согласно следованию по числу
     # так для индекса 123 путь будет /1/2/3 далее имя файла
     path = ''
     string = str(number)
     for i in range(len(string)):
-	path += "/" + string[i]
+        path += "/" + string[i]
     return path
 
-def newPath(cmd)
+def newPath(cmd):
     # получаем путь сохранения файла под каждый файл
     try:
-	path = APP + pathes.get(cmd)
-	path = path.replace('[i]', indexPath(current_photo))
+        path = APP + pathes.get(cmd)
+        path = path.replace('[i]', indexPath(current_photo))
     except: 
-	path = APP + "/tmp"
-	print('no path in dictionary for command {}'.format(cmd))
+        path = APP + "/tmp"
+    print('no path in dictionary for command {}'.format(cmd))
     return path 
 
-def getOption(options, key)
+
+def getOption(options, key):
     pass  # проверка рабочих параметров передаваемых переменных
 
-def makePhoto(roadmap_id)
-    initCTRL(["delay" => "8", "Steps" = 50]) # инициализация контроллера, по хорошему сюда скорость и настройки из БД
+
+def makePhoto(roadmap_id):
+    initCTRL({"delay" : "8", "Steps" : 50}) # инициализация контроллера, по хорошему сюда скорость и настройки из БД
     # sequence = getOption(options, 'sequence') # вот это всё ерунда какая-то... 
     
     # cameras = getOption(options, 'cameras')
     # тут нужно деление по объекту съемки (тест, фон, продукт)
     # product = getOption(options, 'product')
-    if hdr = 1: 
-	photos_by_step = 3
+    if hdr == 1: 
+        photos_by_step = 3
 	
     # photo_type = getOption(options, 'photo_type') # hdr or simply 
     # photos_by_step = getPhotosByStep(photo_type)
     # photo_object = getOption(options, 'object') # product, background (table), test 
 
     for s in range(sequence): #each step need to make photo
-	for c in range(cameras): #if few cameras in table //but here we must use the specific comport
-	    for t in range(photos_by_step): #photo for hdr
-		if (photo_object == 'product')
-		    path = "/i/" + photo_object + "/" + indexPath(product_id)
-		else if (photo_object == 'background')
-		    
-		else # test one
-		    path = "/i/test/" + issue_id + "_cam" + c + "_" + photo_type    
-		runPhoto(c, path) # for photo we must to know witch camera is used    
-	pause()
-	if (sequence == 1) break
-	makeStep(); 
+        for c in range(cameras): #if few cameras in table //but here we must use the specific comport
+            for t in range(photos_by_step): #photo for hdr
+                path = "/i/" + photo_object + "/" + indexPath(product_id)
+                runPhoto(c, path) # for photo we must to know witch camera is used    
+                pause()
+	
+        if (sequence == 1):
+            break
+    makeStep(); 
 
 
-def pause()
+def pause():
     # sleep one second while file exists
     while os.path.exists(PAUSE_FILE):
-	sleep(1)
-	if os.path.exists(PAUSE_REMOVE_FILE):
-	    os.remove(PAUSE_REMOVE_FILE)
-	    os.remove(PAUSE_FILE)
-	    break
-	print('.', end='') #simulate, possible can be stopped some other way
+        sleep(1)
+        if os.path.exists(PAUSE_REMOVE_FILE):
+            os.remove(PAUSE_REMOVE_FILE)
+            os.remove(PAUSE_FILE)
+            break
+        print('.', end='') #simulate, possible can be stopped some other way
     
         
 # функция шага двигателя    
-def makeStep()
+def makeStep():
     # передать контроллеру команду RUN
     pass
 
 
-def run()
+def run():
     # run once
     print('Программа для съемки вокруг объекта')
     print('Проект i360')
     print('https://github.com/lefin17/i360')
     # инициализация подключения к БД
-    start()
+    connect_mysql()
+    if can_start():
+        print ('we can start')
+    else:
+        print ('there is no chance to start')
+            
     # получение команды (здесь задается путь куда сохранять)
     # так это прям из БД получаем абсолютную или относительную локацию в составе команды
 
-    
+  
