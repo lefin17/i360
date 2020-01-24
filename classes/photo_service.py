@@ -4,7 +4,9 @@ import os # for remove file
 
 from time import sleep # for pause options
 
-import pymysql
+#import pymysql
+
+from mysql_connect import *
 
 # команды получаем из очереди при подключении к БД (i360_roadmap)
 # статус кладем тудаже 
@@ -26,10 +28,10 @@ import pymysql
 # множество различных съемок
 # некоторые съемки могут быть объеденены для различных целей
 
-DB_NAME = "i360"
-DB_HOST = "localhost"
-DB_PASS = "nEvMqSM9"
-DB_USER = "user"
+# DB_NAME = "i360"
+# DB_HOST = "localhost"
+# DB_PASS = "nEvMqSM9"
+# DB_USER = "user"
 
 LIVE_TIMEOUT = 30
 
@@ -63,15 +65,14 @@ WORKPLACE_NAME = "NOTE-1" # имя запущенного сервиса с по
 
 # если в заданный промежуток времени не пришло ответа от управляющего воздействия - ошибка
 
-con = None
-cur = None
+# con = None
+# cur = None
 
-def connect_mysql():
-    global con, cur
-    con = pymysql.connect(DB_HOST, DB_USER, DB_PASS, DB_NAME)
-    with con:
-        cur = con.cursor()
-    print (con)    
+# def connect_mysql():
+#    global con, cur
+#    con = pymysql.connect(DB_HOST, DB_USER, DB_PASS, DB_NAME)
+#    with con:
+#        cur = con.cursor()
 
 
 def clear_tmp():
