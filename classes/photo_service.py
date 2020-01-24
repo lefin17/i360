@@ -62,13 +62,16 @@ WORKPLACE_NAME = "NOTE-1" # имя запущенного сервиса с по
 # location - уехал в настройки съемки через sql
 
 # если в заданный промежуток времени не пришло ответа от управляющего воздействия - ошибка
-cur = False
 
+con = None
+cur = None
 
 def connect_mysql():
+    global con, cur
     con = pymysql.connect(DB_HOST, DB_USER, DB_PASS, DB_NAME)
     with con:
         cur = con.cursor()
+    print (con)    
 
 
 def clear_tmp():
@@ -78,8 +81,9 @@ def clear_tmp():
     
     
 def can_start():
+#    global cur
     # print (cur.query)
-    cur.execute("SELECT `i360_roadmap_id` FROM `i360_roadmap` WHERE `i360_roadmap_started` = 1 and `i360_roadmap_finished` = 0 and `i360_roadmap_workplace` = '%s'", (WORKPLACE_NAME)) #command not over
+    cur.execute("SELECT `i360_roadmap_id` FROM `i360_roadmap` WHERE `i360_roadmap_started` = 1 and `i360_roadmap_finished` = 0 and `i360_roadmap_workplace` = %s", (WORKPLACE_NAME)) #command not over
     i = cur.rowcount
     if (i > 0):
 	    res = False
@@ -89,8 +93,9 @@ def can_start():
 	
 		          
 def start_work():
+#    global cur
     # read from mysql command and fix that program in started
-    cur.execute("SELECT `i360_roadmap_id` FROM `i360 roadmap` WHERE  `i360_roadmap_started` = 0 and `i360_roadmap_workplace` = '%s'", (WORKPLACE_NAME)) # command not started
+    cur.execute("SELECT `i360_roadmap_id` FROM `i360 roadmap` WHERE  `i360_roadmap_started` = 0 and `i360_roadmap_workplace` = %s", (WORKPLACE_NAME)) # command not started
     roadmap_id = cur.fetchone()[0]
     print (roadmap_id)
 	
