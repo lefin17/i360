@@ -383,7 +383,7 @@ DROP TABLE IF EXISTS `i360_roadmap`;
 CREATE TABLE `i360_roadmap` (
   `i360_roadmap_id` int(6) NOT NULL AUTO_INCREMENT,
   `i360_roadmap_command` varchar(15) NOT NULL COMMENT 'комманда к исполнению',
-  `i360_roadmap_created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `i360_roadmap_created_at` datetime NULL,
   `i360_roadmap_started_at` datetime NOT NULL COMMENT 'время запуска',
   `i360_roadmap_started` int(1) NOT NULL DEFAULT '0',
   `i360_roadmap_finished_at` datetime DEFAULT NULL COMMENT 'время окончания',
