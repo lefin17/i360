@@ -9,7 +9,9 @@ from time import sleep # for pause options
 from mysql_connect import *
 
 # команды получаем из очереди при подключении к БД (i360_roadmap)
-# статус кладем тудаже 
+# команды p32, h32 - и тому подобное - p32 - фотография, смещение на 50 шагов со скоростью по дефолту
+# статус кладем тудаже
+ 
 # файлы с илюстрациями сохраняем на диск
 # имена файлов могут быть по типу - тест, фото, хдр (хдр + фото), фон (BACK)
 # имена файлов зависят от съемки - номер задания (разделенный по индексу), далее номер камеры cam+i если камер больше 1? опционально,
@@ -104,6 +106,16 @@ def start_work():
 	#end start_work file	       
 	    
 
+def read_command(cmd):
+    # простая команда дает некоторые настройки по умолчанию
+    settings_dict = {"p32" : {"sequence": 32, "hdr": 0, "speed": 10, "steps": 50},
+                     "h32" : {"sequence": 32, "hdr": 1, "speed": 10, "steps": 50},
+                     "photo": {"sequence": 1, "hdr": 0}}
+                        
+    settings = settings_dict.get(cmd, "photo")
+    return settings                   
+
+
 def update_work(message, progress):
     cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_updated_at` = NOW(), `i360_roadmap_message` = '%s', `i360_roadmap_progress` = '%s' WHERE `i360_roadmap_id` = '%s'", (message, progress, roadmap_id))
     print ("Update work")     
@@ -197,8 +209,9 @@ def run():
     print('Программа для съемки вокруг объекта')
     print('Проект i360')
     print('https://github.com/lefin17/i360')
+    print()
     # инициализация подключения к БД
-    connect_mysql()
+    con, cur = connect_mysql()
     if can_start():
         print ('we can start')
     else:
