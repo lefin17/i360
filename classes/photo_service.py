@@ -173,6 +173,7 @@ def makePhoto(roadmap_id):
     if ctrl == False:
         print ("Can not initialize controller")
         return False
+
     # sequence = getOption(options, 'sequence') # вот это всё ерунда какая-то... 
     
     # cameras = getOption(options, 'cameras')
@@ -196,7 +197,7 @@ def makePhoto(roadmap_id):
         for c in range(cameras): #if few cameras in table //but here we must use the specific comport
             for t in range(photos_by_step): #photo for hdr
                 fn = path + "/cam" + c + "-" + s
-                if (photos_by_range > 0):
+                if (photos_by_range > 1):
                     fn += "-" + t
                 runPhoto(c, fn) # for photo we must to know witch camera is used    
                 pause()
