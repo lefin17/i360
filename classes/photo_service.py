@@ -7,6 +7,7 @@ from time import sleep # for pause options
 #import pymysql
 
 from mysql_connect import *
+from roadmap_class import *
 
 # команды получаем из очереди при подключении к БД (i360_roadmap)
 # команды p32, h32 - и тому подобное - p32 - фотография, смещение на 50 шагов со скоростью по дефолту
@@ -48,9 +49,7 @@ PAUSE_REMOVE_FILE = APP + "/tmp/pause_remover.tmp"
 RESET_LOOP_FILE = APP + "/tmp/reset_remover.tmp"
 
 # словарь команд. Фото по кругу, просто фото, возможно просто поворот? или просто поворот убераем на файловое взаимодействие
-commands_dict = {"p32" : {"sequence": 32, "hdr": 0, "speed": 10, "steps": 50},
-                "h32" : {"sequence": 32, "hdr": 1, "speed": 10, "steps": 50},
-                "photo": {"sequence": 1, "hdr": 0}}
+
 
 settings = {}
 
@@ -94,72 +93,6 @@ def clear_tmp():
     #clear tmp folder from files witch can affect for executaiton of main program
     os.remove(PAUSE_LOOP_FILE)
     os.remove(RESET_LOOP_FILE)
-    
-    
-def can_start():
-#    global cur
-    # print (cur.query)
-    con, cur = connect_mysql()
-    cur.execute("SELECT `i360_roadmap_id` FROM `i360_roadmap` WHERE `i360_roadmap_started` = 1 and `i360_roadmap_finished` = 0 and `i360_roadmap_workplace` = %s", (WORKPLACE_NAME)) #command not over
-    i = cur.rowcount
-    if (i > 0):
-        res = False
-    else:
-        res = True
-    cur.close()
-    con.close()
-    return res 	  
-	
-		          
-def read_options(options):    
-    # some options can be read from json from options field in db
-    # read more complex settings from json after command load default param
-    json_options = json.loads(options)
-    fields = ["steps", "sequence", "hdr", "cameras"]
-    for =i in range(len(fields)):
-        if fields[i] in json_options:
-            key = fields[i]
-            settings[key] = json_options[key] 
-
-
-def start_issue():
-    #    global cur
-    # read from mysql command and fix that program in started
-    con, cur = connect_mysql()
-    cur.execute("SELECT `i360_roadmap_id`, `i360_roadmap_json_options`, `i360_roadmap_command` FROM `i360 roadmap` WHERE  `i360_roadmap_started` = 0 and `i360_roadmap_workplace` = %s", (WORKPLACE_NAME)) # command not started
-    roadmap_id, options, cmd = cur.fetchone()
-    print ("loaded issue from roadmap command %s, roadmap id: %d", (cmd, roadmap_id))
-    read_command(cmd)
-    read_options(options)
-    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_stated` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = %s", roadmap_id)
-    con.commit()
-    cur.close()
-    con.close()
-	#end start_work file	       
-	    
-
-def read_command(cmd):
-    # простая команда дает некоторые настройки по умолчанию
-    settings = commands_dict.get(cmd, "photo") #default simple photo
-    return settings                   
-
-
-def update_issue(json_message, progress):
-    con, cur = connect_mysql()
-    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_updated_at` = NOW(), `i360_roadmap_json_message` = %s, `i360_roadmap_progress` = %d WHERE `i360_roadmap_id` = %d", (json_message, progress, roadmap_id))
-    con.commit()
-    print ("u", end='') # just update current state of work
-	cur.close()
-    con.close()     
-		
-def finish_issue():
-    # put to database that work is finished
-    con, cur = connect_mysql()
-    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_finished` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = %s", (roadmap_id))
-    con.commit()
-    print ("F") #finish this issue and waiting for next task from roadmap or file
-    cur.close()
-    con.close()
 
 
 def indexPath(number):
@@ -190,31 +123,32 @@ def initCtrl():
 
 def run_loop(): 
     #roadmap_id global one?
-    hdr = settings.get("hdr", 0)
-    cameras = settings.get("cameras", 1)
-    sequence = settings.get("sequence", 1) #can be 32, possible more, 1600 microstep by stepper motor for whole circle (loop), 
+    hdr = roadmap.settings.get("hdr", 0)
+    cameras = roadmap.settings.get("cameras", 1)
+    sequence = roadmap.settings.get("sequence", 1) #can be 32, possible more, 1600 microstep by stepper motor for whole circle (loop), 
    
     if hdr == 1: 
         photos_by_step = 3
-	else:
+    else:
         photos_by_step = 1
 
-    path = "/i/src" + indexPath(roadmap_id)
+    path = "/i/src" + indexPath(roadmap.roadmap_id)
 
     for s in range(sequence): #each step needs to make photo
         for c in range(cameras): #if few cameras in table //but here we must use the specific comport
             for t in range(photos_by_step): #photo for hdr ? can be differ from different cameras?
-                fn = path + "/" + roadmap_id + "-cam" + c + "-" + s
+                fn = path + "/" + roadmap.roadmap_id + "-cam" + c + "-" + s
                 if (photos_by_range > 1):
                     fn += "-" + t
                 runPhoto(c, fn) # for photo we must to know which camera is used    
                 loop_pause()
-                if (loop_reset()) return False
+                if (loop_reset()):
+                    return False
             #count progress, still with out photo by cameras count
-	        progress = round(s / sequence * 100)
+            progress = round(s / sequence * 100)
             # make message for sql
             json_message = json.dumps({"fn" : fn, "step":  s, "camera": c, "photo_step": t})
-            update_issue(json_message, progress) #info to sql
+            roadmap.update_issue(json_message, progress) #info to sql
             sleep(1) # в секундах
         if (sequence == 1):
             break
@@ -263,12 +197,13 @@ def run():
     print('https://github.com/lefin17/i360')
     print()
     # инициализация подключения к БД
-    con, cur = connect_mysql()
-    if can_start() && initCtrl(): # если ничего другого не выполняется, далее проверка на подсоединение контроллера
+    # con, cur = connect_mysql()
+    roadmap = Roadmap()
+    if roadmap.can_start() & initCtrl(): # если ничего другого не выполняется, далее проверка на подсоединение контроллера
         print ('we can start')
-        start_issue() # запуск команды
+        roadmap.start_issue() # запуск команды
         run_loop() # цикл - у функции есть успех о выполенении
-        finish_issue() # финализация выполнения (можно давать информацию об успехе или отмене выполнения)
+        roadmap.finish_issue() # финализация выполнения (можно давать информацию об успехе или отмене выполнения)
     else:
         print ('there is no chance to start')
   
