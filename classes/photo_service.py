@@ -41,11 +41,11 @@ APP = "/home/lefin/work/i360";
 
 LOG_PATH = "/log"
 
-PAUSE_FILE = APP + "/tmp/pause.tmp"
+PAUSE_LOOP_FILE = APP + "/tmp/pause.tmp"
 
 PAUSE_REMOVE_FILE = APP + "/tmp/pause_remover.tmp"
 
-RESET_FILE = APP + "/tmp/reset.tmp"
+RESET_LOOP_FILE = APP + "/tmp/reset_remover.tmp"
 
 # словарь команд. Фото по кругу, просто фото, возможно просто поворот? или просто поворот убераем на файловое взаимодействие
 commands_dict = {"p32" : {"sequence": 32, "hdr": 0, "speed": 10, "steps": 50},
@@ -92,19 +92,22 @@ WORKPLACE_NAME = "NOTE-1" # имя запущенного сервиса с по
 
 def clear_tmp():
     #clear tmp folder from files witch can affect for executaiton of main program
-    os.remove(PAUSE_FILE)
-    os.remove(RESET_FILE)
+    os.remove(PAUSE_LOOP_FILE)
+    os.remove(RESET_LOOP_FILE)
     
     
 def can_start():
 #    global cur
     # print (cur.query)
+    con, cur = connect_mysql()
     cur.execute("SELECT `i360_roadmap_id` FROM `i360_roadmap` WHERE `i360_roadmap_started` = 1 and `i360_roadmap_finished` = 0 and `i360_roadmap_workplace` = %s", (WORKPLACE_NAME)) #command not over
     i = cur.rowcount
     if (i > 0):
         res = False
     else:
         res = True
+    cur.close()
+    con.close()
     return res 	  
 	
 		          
@@ -122,6 +125,7 @@ def read_options(options):
 def start_issue():
     #    global cur
     # read from mysql command and fix that program in started
+    con, cur = connect_mysql()
     cur.execute("SELECT `i360_roadmap_id`, `i360_roadmap_json_options`, `i360_roadmap_command` FROM `i360 roadmap` WHERE  `i360_roadmap_started` = 0 and `i360_roadmap_workplace` = %s", (WORKPLACE_NAME)) # command not started
     roadmap_id, options, cmd = cur.fetchone()
     print ("loaded issue from roadmap command %s, roadmap id: %d", (cmd, roadmap_id))
@@ -129,6 +133,8 @@ def start_issue():
     read_options(options)
     cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_stated` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = %s", roadmap_id)
     con.commit()
+    cur.close()
+    con.close()
 	#end start_work file	       
 	    
 
@@ -139,16 +145,21 @@ def read_command(cmd):
 
 
 def update_work(message, progress):
+    con, cur = connect_mysql()
     cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_updated_at` = NOW(), `i360_roadmap_message` = %s, `i360_roadmap_progress` = %d WHERE `i360_roadmap_id` = %d", (message, progress, roadmap_id))
     con.commit()
     print ("u", end='') # just update current state of work
-	     
+	cur.close()
+    con.close()     
 		
 def finish_work():
     # put to database that work is finished
+    con, cur = connect_mysql()
     cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_finished` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = %s", (roadmap_id))
     con.commit()
     print ("F") #finish this issue and waiting for next task from roadmap or file
+    cur.close()
+    con.close()
 
 
 def indexPath(number):
@@ -161,8 +172,7 @@ def indexPath(number):
     return path
 
 
-
-def makePhoto(roadmap_id): 
+def initCtrl():
     delay = settings.get("delay", 8) # нужно увести куда-то в модуль управления поворотом платформы
     steps = settings.get("steps", 50)
     com_port = settings.get("com_arduino", "/dev/COM") #need to test and change
@@ -170,16 +180,16 @@ def makePhoto(roadmap_id):
     ctrl = initCTRL({"delay" : delay, #задержка между шагами в милисекундах, определяет скорость вращения платформы 
                      "steps" : steps, #число шагов шагового двигателя на один шаг поворота платформы
                   "com_port" : com_port}) # инициализация контроллера, по хорошему сюда скорость и настройки из БД
+    # вышестоящую функцию нужно бы заменить на соединение с контроллером и вывод этого результата
     if ctrl == False:
         print ("Can not initialize controller")
+
         return False
+    return True
 
-    # sequence = getOption(options, 'sequence') # вот это всё ерунда какая-то... 
-    
-    # cameras = getOption(options, 'cameras')
-    # тут нужно деление по объекту съемки (тест, фон, продукт)
-    # product = getOption(options, 'product')
 
+def run_loop(): 
+    #roadmap_id global one?
     hdr = settings.get("hdr", 0)
     cameras = settings.get("cameras", 1)
     sequence = settings.get("sequence", 1) #can be 32, 
@@ -189,40 +199,60 @@ def makePhoto(roadmap_id):
 	else:
         photos_by_step = 1
 
-    # photo_type = getOption(options, 'photo_type') # hdr or simply 
-    # photos_by_step = getPhotosByStep(photo_type)
-    # photo_object = getOption(options, 'object') # product, background (table), test 
     path = "/i/src" + indexPath(roadmap_id)
+
     for s in range(sequence): #each step needs to make photo
         for c in range(cameras): #if few cameras in table //but here we must use the specific comport
-            for t in range(photos_by_step): #photo for hdr
-                fn = path + "/cam" + c + "-" + s
+            for t in range(photos_by_step): #photo for hdr ? can be differ from different cameras?
+                fn = path + "/" + roadmap_id + "-cam" + c + "-" + s
                 if (photos_by_range > 1):
                     fn += "-" + t
                 runPhoto(c, fn) # for photo we must to know which camera is used    
-                pause()
-	
+                loop_pause()
+                if (loop_reset()) return False
+            #count progress, still with out photo by cameras count
+	        progress = round(s / sequence * 100)
+            # make message for sql
+            json_message = json.dumps({"fn" : fn, "step":  s, "camera": c, "photo_step": t})
+            update_work(json_message, progress) #info to sql
+            sleep(1) # в секундах
         if (sequence == 1):
             break
 
-        makeStep(); 
-        update_work("next step", s)
-    finish_work()
+        makeStep(); #поворот платформы / platform rotation step
+    return True #success with task - after it start finish function
 
-def pause():
+def loop_reset():
+    #reset loop by file exists
+    if (os.path.exists(RESET_LOOP_FILE)):
+        os.remove(RESET_LOOP_FILE)
+        return True
+    return False
+  
+          
+def loop_pause():
     # sleep one second while file exists
-    while os.path.exists(PAUSE_FILE):
+    while os.path.exists(PAUSE_LOOP_FILE):
         sleep(1)
         if os.path.exists(PAUSE_REMOVE_FILE):
             os.remove(PAUSE_REMOVE_FILE)
-            os.remove(PAUSE_FILE)
+            os.remove(PAUSE_LOOP_FILE)
             break
         print('.', end='') #simulate, possible can be stopped some other way
     
+
+def runPhoto(camera, fn):
+    #fn - file to save
+    #camera - index of camera to work with
+    #load camera settings
+    print ("P", end='')
+    pass
+
         
-# функция шага двигателя    
 def makeStep():
+    # функция шага двигателя    
     # передать контроллеру команду RUN
+    print ("S", end='')
     pass
 
 
@@ -238,8 +268,4 @@ def run():
         print ('we can start')
     else:
         print ('there is no chance to start')
-            
-    # получение команды (здесь задается путь куда сохранять)
-    # так это прям из БД получаем абсолютную или относительную локацию в составе команды
-
   
