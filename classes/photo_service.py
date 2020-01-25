@@ -144,15 +144,15 @@ def read_command(cmd):
     return settings                   
 
 
-def update_work(message, progress):
+def update_issue(json_message, progress):
     con, cur = connect_mysql()
-    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_updated_at` = NOW(), `i360_roadmap_message` = %s, `i360_roadmap_progress` = %d WHERE `i360_roadmap_id` = %d", (message, progress, roadmap_id))
+    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_updated_at` = NOW(), `i360_roadmap_json_message` = %s, `i360_roadmap_progress` = %d WHERE `i360_roadmap_id` = %d", (json_message, progress, roadmap_id))
     con.commit()
     print ("u", end='') # just update current state of work
 	cur.close()
     con.close()     
 		
-def finish_work():
+def finish_issue():
     # put to database that work is finished
     con, cur = connect_mysql()
     cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_finished` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = %s", (roadmap_id))
@@ -192,7 +192,7 @@ def run_loop():
     #roadmap_id global one?
     hdr = settings.get("hdr", 0)
     cameras = settings.get("cameras", 1)
-    sequence = settings.get("sequence", 1) #can be 32, 
+    sequence = settings.get("sequence", 1) #can be 32, possible more, 1600 microstep by stepper motor for whole circle (loop), 
    
     if hdr == 1: 
         photos_by_step = 3
@@ -214,7 +214,7 @@ def run_loop():
 	        progress = round(s / sequence * 100)
             # make message for sql
             json_message = json.dumps({"fn" : fn, "step":  s, "camera": c, "photo_step": t})
-            update_work(json_message, progress) #info to sql
+            update_issue(json_message, progress) #info to sql
             sleep(1) # в секундах
         if (sequence == 1):
             break
@@ -264,8 +264,11 @@ def run():
     print()
     # инициализация подключения к БД
     con, cur = connect_mysql()
-    if can_start():
+    if can_start() && initCtrl(): # если ничего другого не выполняется, далее проверка на подсоединение контроллера
         print ('we can start')
+        start_issue() # запуск команды
+        run_loop() # цикл - у функции есть успех о выполенении
+        finish_issue() # финализация выполнения (можно давать информацию об успехе или отмене выполнения)
     else:
         print ('there is no chance to start')
   
