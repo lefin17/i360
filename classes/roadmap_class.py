@@ -1,13 +1,18 @@
 class Roadmap:
 #class which get info from mysql and get some settings for future work
+#connect_mysql class required for mysql connection
     roadmap_id = 0
     commands_dict = {"p32"  : {"sequence": 32, "hdr": 0, "speed": 10, "steps": 50},
                      "h32"  : {"sequence": 32, "hdr": 1, "speed": 10, "steps": 50},
                      "photo": {"sequence": 1, "hdr": 0}}
     settings = {}
-    WORKPLACE_NAME = 'NOTE-1'    
+    workplace = 'NOTE-1'    
     fields = ["steps", "sequence", "hdr", "cameras"]
 
+    def __init__(self, workplace)
+        self.workplace = workplace
+
+     
     def can_start(self):
     #    global cur
     # print (cur.query)
@@ -47,7 +52,7 @@ class Roadmap:
     #    global cur
     # read from mysql command and fix that program in started
         con, cur = connect_mysql()
-        cur.execute("SELECT `i360_roadmap_id`, `i360_roadmap_json_options`, `i360_roadmap_command` FROM `i360 roadmap` WHERE  `i360_roadmap_started` = 0 and `i360_roadmap_workplace` = %s", (WORKPLACE_NAME)) # command not started
+        cur.execute("SELECT `i360_roadmap_id`, `i360_roadmap_json_options`, `i360_roadmap_command` FROM `i360 roadmap` WHERE  `i360_roadmap_started` = 0 and `i360_roadmap_workplace` = %s", (self.WORKPLACE_NAME)) # command not started
         self.roadmap_id, options, cmd = cur.fetchone()
         print ("loaded issue from roadmap command %s, roadmap id: %d", (cmd, self.roadmap_id))
         self.read_command(cmd)
