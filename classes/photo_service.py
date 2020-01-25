@@ -47,11 +47,24 @@ PAUSE_REMOVE_FILE = APP + "/tmp/pause_remover.tmp"
 
 RESET_FILE = APP + "/tmp/reset.tmp"
 
-cameras = 1 # can be changed by load options to roadmap
+# словарь команд. Фото по кругу, просто фото, возможно просто поворот? или просто поворот убераем на файловое взаимодействие
+commands_dict = {"p32" : {"sequence": 32, "hdr": 0, "speed": 10, "steps": 50},
+                "h32" : {"sequence": 32, "hdr": 1, "speed": 10, "steps": 50},
+                "photo": {"sequence": 1, "hdr": 0}}
 
-sequence_steps = 32 # количество шагов в последовательности по умолчанию (в следующей версии можно перенести в файл настроек)
+settings = {}
 
-hdr = 1 # может принимать значение (0 || 1) если 0 то без цикла, если 1 - то добавляется индекс к файлам и цикл по брекетингу
+timer = 0; # инструмент построения таймера 
+
+# жив ли контроллер управления, получен ли от него ответ в течение LIVE_TIMEOUT
+ctrl_alive = False;
+
+
+# cameras = 1 # can be changed by load options to roadmap
+
+# sequence_steps = 32 # количество шагов в последовательности по умолчанию (в следующей версии можно перенести в файл настроек)
+
+# hdr = 1 # может принимать значение (0 || 1) если 0 то без цикла, если 1 - то добавляется индекс к файлам и цикл по брекетингу
 	# можно заменить на кадров на позицию, но тогда немного смысл теряется.
 	
 roadmap_id = 0 # обязательно меняется загрузкой - если остается 0 после функции старта - уходим из программы
@@ -89,53 +102,54 @@ def can_start():
     cur.execute("SELECT `i360_roadmap_id` FROM `i360_roadmap` WHERE `i360_roadmap_started` = 1 and `i360_roadmap_finished` = 0 and `i360_roadmap_workplace` = %s", (WORKPLACE_NAME)) #command not over
     i = cur.rowcount
     if (i > 0):
-	    res = False
+        res = False
     else:
         res = True
     return res 	  
 	
 		          
-def start_work():
-#    global cur
+def read_options(options):    
+    # some options can be read from json from options field in db
+    # read more complex settings from json after command load default param
+    json_options = json.loads(options)
+    fields = ["steps", "sequence", "hdr", "cameras"]
+    for =i in range(len(fields)):
+        if fields[i] in json_options:
+            key = fields[i]
+            settings[key] = json_options[key] 
+
+
+def start_issue():
+    #    global cur
     # read from mysql command and fix that program in started
-    cur.execute("SELECT `i360_roadmap_id` FROM `i360 roadmap` WHERE  `i360_roadmap_started` = 0 and `i360_roadmap_workplace` = %s", (WORKPLACE_NAME)) # command not started
-    roadmap_id = cur.fetchone()[0]
-    print (roadmap_id)
-	
-    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_stated` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = '%s'", roadmap_id)
+    cur.execute("SELECT `i360_roadmap_id`, `i360_roadmap_json_options`, `i360_roadmap_command` FROM `i360 roadmap` WHERE  `i360_roadmap_started` = 0 and `i360_roadmap_workplace` = %s", (WORKPLACE_NAME)) # command not started
+    roadmap_id, options, cmd = cur.fetchone()
+    print ("loaded issue from roadmap command %s, roadmap id: %d", (cmd, roadmap_id))
+    read_command(cmd)
+    read_options(options)
+    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_stated` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = %s", roadmap_id)
+    con.commit()
 	#end start_work file	       
 	    
 
 def read_command(cmd):
     # простая команда дает некоторые настройки по умолчанию
-    settings_dict = {"p32" : {"sequence": 32, "hdr": 0, "speed": 10, "steps": 50},
-                     "h32" : {"sequence": 32, "hdr": 1, "speed": 10, "steps": 50},
-                     "photo": {"sequence": 1, "hdr": 0}}
-                        
-    settings = settings_dict.get(cmd, "photo")
+    settings = commands_dict.get(cmd, "photo") #default simple photo
     return settings                   
 
 
 def update_work(message, progress):
-    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_updated_at` = NOW(), `i360_roadmap_message` = '%s', `i360_roadmap_progress` = '%s' WHERE `i360_roadmap_id` = '%s'", (message, progress, roadmap_id))
-    print ("Update work")     
+    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_updated_at` = NOW(), `i360_roadmap_message` = %s, `i360_roadmap_progress` = %d WHERE `i360_roadmap_id` = %d", (message, progress, roadmap_id))
+    con.commit()
+    print ("u", end='') # just update current state of work
 	     
 		
 def finish_work():
     # put to database that work is finished
-    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_finished` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = '%s'", (roadmap_id))
-    print ("Finish work")
+    cur.execute("UPDATE `i360_roadmap` SET `i360_roadmap_finished` = 1, `i360_roadmap_started_at` = NOW() WHERE `i360_roadmap_id` = %s", (roadmap_id))
+    con.commit()
+    print ("F") #finish this issue and waiting for next task from roadmap or file
 
-
-def read_options():    
-    # some options can be read from json from options field in db
-    pass    
-    
-
-timer = 0; # инструмент построения таймера 
-
-# жив ли контроллер управления, получен ли от него ответ в течение LIVE_TIMEOUT
-ctrl_alive = False;
 
 def indexPath(number):
     # формируем путь из индекса согласно следованию по числу
@@ -146,46 +160,53 @@ def indexPath(number):
         path += "/" + string[i]
     return path
 
-def newPath(cmd):
-    # получаем путь сохранения файла под каждый файл
-    try:
-        path = APP + pathes.get(cmd)
-        path = path.replace('[i]', indexPath(current_photo))
-    except: 
-        path = APP + "/tmp"
-    print('no path in dictionary for command {}'.format(cmd))
-    return path 
 
 
-def getOption(options, key):
-    pass  # проверка рабочих параметров передаваемых переменных
+def makePhoto(roadmap_id): 
+    delay = settings.get("delay", 8) # нужно увести куда-то в модуль управления поворотом платформы
+    steps = settings.get("steps", 50)
+    com_port = settings.get("com_arduino", "/dev/COM") #need to test and change
 
-
-def makePhoto(roadmap_id):
-    initCTRL({"delay" : "8", "Steps" : 50}) # инициализация контроллера, по хорошему сюда скорость и настройки из БД
+    ctrl = initCTRL({"delay" : delay, #задержка между шагами в милисекундах, определяет скорость вращения платформы 
+                     "steps" : steps, #число шагов шагового двигателя на один шаг поворота платформы
+                  "com_port" : com_port}) # инициализация контроллера, по хорошему сюда скорость и настройки из БД
+    if ctrl == False:
+        print ("Can not initialize controller")
+        return False
     # sequence = getOption(options, 'sequence') # вот это всё ерунда какая-то... 
     
     # cameras = getOption(options, 'cameras')
     # тут нужно деление по объекту съемки (тест, фон, продукт)
     # product = getOption(options, 'product')
+
+    hdr = settings.get("hdr", 0)
+    cameras = settings.get("cameras", 1)
+    sequence = settings.get("sequence", 1) #can be 32, 
+   
     if hdr == 1: 
         photos_by_step = 3
-	
+	else:
+        photos_by_step = 1
+
     # photo_type = getOption(options, 'photo_type') # hdr or simply 
     # photos_by_step = getPhotosByStep(photo_type)
     # photo_object = getOption(options, 'object') # product, background (table), test 
-
+    path = "/i/src" + indexPath(roadmap_id)
     for s in range(sequence): #each step need to make photo
         for c in range(cameras): #if few cameras in table //but here we must use the specific comport
             for t in range(photos_by_step): #photo for hdr
-                path = "/i/" + photo_object + "/" + indexPath(product_id)
-                runPhoto(c, path) # for photo we must to know witch camera is used    
+                fn = path + "/cam" + c + "-" + s
+                if (photos_by_range > 0):
+                    fn += "-" + t
+                runPhoto(c, fn) # for photo we must to know witch camera is used    
                 pause()
 	
         if (sequence == 1):
             break
-    makeStep(); 
 
+        makeStep(); 
+        update_work("next step", s)
+    finish_work()
 
 def pause():
     # sleep one second while file exists
