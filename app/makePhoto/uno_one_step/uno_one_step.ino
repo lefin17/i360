@@ -106,7 +106,11 @@ void setup() {
       pinMode(DIR_PIN, OUTPUT);
   //подключение к рабочему месту    
   Serial.begin(9600);
-  
+  delay(10);
+  info();
+}
+
+void info() { 
   Serial.println("\n\nTable with stepper motor. i360 Project \n");
   Serial.println("https://github.com/lefin17/i360 \n");
   Serial.println("Commands: RUN - run the stepper");
@@ -119,6 +123,15 @@ void setup() {
   Serial.println("Quarter of stepper rotation is a soft start and stop system");
   Serial.println("When Run over - you got message");
   Serial.println("dot heart beat system");
+  delay(10);
+}
+
+void current_vars()
+    {
+  Serial.println("Current steps in one run: " + steps);
+  Serial.println("current delay_time: " + delay_time + " ms");
+  Serial.println("Current direction " + direction);
+  delay(10);
 }
 
 void loop() {
@@ -129,7 +142,8 @@ void loop() {
     if (cmd == "RUN") { MotorStep(); } 
     else if (letter == "T") { setMotorDelayTime(cmd); } 
     else if (cmd == "CW" || cmd == "CCW") { setMotorDirection(cmd);  } 
-    else if (letter == "S") {  setMotorStepsByRun(cmd); } 
+    else if (letter == "S") {  setMotorStepsByRun(cmd); }
+    else if (cmd == "INFO") { current_info(); }  
     else Serial.print("Error: command " + cmd + " not detected");
   } 
 }

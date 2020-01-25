@@ -1,5 +1,7 @@
-class Motor:
 import serial 
+
+class Motor:
+
 # class to initiate arduino connection
 # put some settings to motor such as speed, direction, steps to start and stops, connection speed  
     speed = 8
@@ -8,21 +10,88 @@ import serial
     connection_speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
     connection_speed = 9600
     realport = None
+    connected = False
+    directions = { "CCW" : "CCW", "CW" : "CW" } 
 
-    def __init__(self):
-        print ("motor initiated")
-    
+    def __init__(self, delay, steps, direction):
+        print ("motor object initiated")
+        self.steps = steps
+        self.delay = int(delay) # need the limits?
+        self.direction = self.directions.get(direction, "CCW")
 
-    def set_serial_port(serial_port)
+
+    def set_param(self)
+        self.set_delay(self.delay)
+        self.set_steps(self.steps)
+        self.set_direction(self.direction)
+        self.read_param()
+
+
+    def read_param(self)
+        #get some info from controller (values of variables)
+        self.send("INFO");
+
+
+    def set_serial_port(self, serial_port)
         self.serial_port = serial_port
  
+
     def connect(self):
         try:
-            self.realport = serial.Serial(self.serial_port,int(self.connection_speed))
-            self.ConnectButton.setStyleSheet("background-color: green")
-            self.ConnectButton.setText('Подключено')
+            self.realport = serial.Serial(self.serial_port, int(self.connection_speed))
+            time.sleep(2)
+            connected = True
+            print ("Arduino connected")
+            while self.realport.inWaiting() > 0: 
+                print self.realport.readline() #get info from arduino
         except Exception as e:
             print(e)
+
+
+    def send(self, cmd):
+        # https://qna.habr.com/q/537925 
+        # line.decode().strip()
+        #     отправка команды на контроллер, по хорошему должна завершаться подтверждением 
+        #    выполнения или выходить с ошибкой при не получении по истечении срока лимита времени
+        result = []
+        if self.realport:
+            self.realport.write(cmd)
+            time.sleep(0.2) #delay from operation send to controller
+            while self.realport.inWaiting > 0:
+                line = self.realport.readline()
+                result.append(line.decode.strip())                 
+            return result
+        return False
+
+
+    def make_step(self)
+        #basic functional of this module
+        self.send("RUN") #make the step with current direction by needed steps and delay
+        time.sleep((self.delay * self.steps / 1000) + 1) #wail till it will stop + 1 second
+        while self.realport.inWaiting() > 0:
+            print self.realport.readline()
+
+
+    def set_delay(self, delay)
+    # задержка между микрошагами шагового двигателя при установившемся движении
+        self.delay = delay
+        if res = self.send("T" + self.delay):
+            print res
+
+
+    def set_steps(self, steps)
+        # число шагов шагового двигателя при одном шаге поворота платформы
+        self.steps = steps
+        if res = self.send("S" + self.steps): 
+            print res 
+
+
+    def set_direction(self, direction)
+        # Определение направление вращения платформы
+        self.direction = direction
+        if res = self.send(direction): #direction { "CW" || "CCW" } 
+            print res
+
     
     def serial_ports():
     # info about which port for arduino we can use
