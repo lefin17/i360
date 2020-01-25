@@ -15,7 +15,7 @@ from mysql_connect import *
 # файлы с илюстрациями сохраняем на диск
 # имена файлов могут быть по типу - тест, фото, хдр (хдр + фото), фон (BACK)
 # имена файлов зависят от съемки - номер задания (разделенный по индексу), далее номер камеры cam+i если камер больше 1? опционально,
-# далее при съемки hdr добавляем индекс последовательности для дальнейшей обраотки
+# далее при съемки hdr добавляем индекс последовательности для дальнейшей обработки
 # программа выполняет одну не отработанную команду из очереди в БД на локацию
 # возможно игра в паузу (например через управляющий файл, или вспомогательные команды на локацию)
 
@@ -193,13 +193,13 @@ def makePhoto(roadmap_id):
     # photos_by_step = getPhotosByStep(photo_type)
     # photo_object = getOption(options, 'object') # product, background (table), test 
     path = "/i/src" + indexPath(roadmap_id)
-    for s in range(sequence): #each step need to make photo
+    for s in range(sequence): #each step needs to make photo
         for c in range(cameras): #if few cameras in table //but here we must use the specific comport
             for t in range(photos_by_step): #photo for hdr
                 fn = path + "/cam" + c + "-" + s
                 if (photos_by_range > 1):
                     fn += "-" + t
-                runPhoto(c, fn) # for photo we must to know witch camera is used    
+                runPhoto(c, fn) # for photo we must to know which camera is used    
                 pause()
 	
         if (sequence == 1):
