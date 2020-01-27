@@ -123,15 +123,20 @@ void setup() {
 }
 
 void info() { 
-  Serial.println("\n\nTable with stepper motor. i360 Project \n");
-  Serial.println("https://github.com/lefin17/i360 \n");
+  Serial.println("\n\nTable with stepper motor. i360 Project");
+  Serial.println("https://github.com/lefin17/i360.git");
   Serial.println("Commands: RUN - run the stepper");
   Serial.println("T[time(ms)] - delay time in ms");
   Serial.println("CV - Direction by clock watch");
   Serial.println("CCW - Direction contr clock watch");
   Serial.println("S[steps] - number of microsteps of stepper motor to next stop");
-  Serial.println("Default steps: " + String(steps));
-  Serial.println("Default delay_time: " + String(delay_time) + " ms");
+  
+  String default_steps = "Default steps: " + String(steps);
+  Serial.println(default_steps);
+  
+  String default_delay = "Default delay_time: " + String(delay_time) + " ms";
+  Serial.println(default_delay);
+  
   Serial.println("Quarter of stepper rotation is a soft start and stop system");
   Serial.println("When Run over - you got message");
   Serial.println("dot heart beat system");
@@ -140,10 +145,16 @@ void info() {
 
 void current_info()
     {
-  Serial.println("Current steps in one run: " + String(steps));
-  Serial.println("current delay_time: " + String(delay_time) + " ms");
-  Serial.println("Current direction: " + direction);
-  delay(10);
+  String CurrentSteps = "Current steps in one run: " + String(steps);
+  Serial.println(CurrentSteps);
+  
+  String CurrentDelayTime = "Current delay_time: " + String(delay_time) + " ms";
+  Serial.println(CurrentDelayTime);
+  
+  String CurrentDirection = "Current direction: " + direction;
+  Serial.println(CurrentDirection);
+  
+  delay(100);
 }
 
 void loop() {
