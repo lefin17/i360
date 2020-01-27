@@ -45,7 +45,7 @@ void setMotorDelayTime(String command)
         delay_time = command.substring(2).toInt();
         if (delay_time < 2) delay_time = 2;
         if (delay_time > 500) delay_time = 500;
-        String DelayInfo = 'Delay_time: ' + delay_time;
+        String DelayInfo = 'Delay_time: ' + String(delay_time);
         Serial.println(DelayInfo);
   }
   
@@ -54,7 +54,7 @@ void setMotorStepsByRun(String command)
     steps = command.substring(2).toInt();
     if (steps < 1) steps = 1;
     if (steps > MOTOR_STEPS_REVOLUTION * GEAR) steps = MOTOR_STEPS_REVOLUTION * GEAR;
-    String StepInfo = "Steps: " + steps;
+    String StepInfo = "Steps: " + String(steps);
     Serial.println(StepInfo);
   }  
   
@@ -90,7 +90,7 @@ void MotorRun()
     }      
 //  digitalWrite(ENABLE_PIN, LOW);
   analogWrite(ENABLE_PIN, 100); //Блокировка шагового двигателя
-  String RunInfo = 'RUN COMPLITE: T' + delay_time + 'S'+ steps;
+  String RunInfo = 'RUN COMPLITE: T' + String(delay_time) + 'S'+ String(steps);
   Serial.println(RunInfo);
   }
 
