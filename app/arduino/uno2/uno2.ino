@@ -90,7 +90,7 @@ void MotorRun()
     }      
 //  digitalWrite(ENABLE_PIN, LOW);
   analogWrite(ENABLE_PIN, 100); //Блокировка шагового двигателя
-  String RunInfo = "RUN COMPLITE: T" + delay_time + "S"+ steps;
+  String RunInfo = "RUN COMPLITE: T" + String(delay_time) + "S"+ String(steps);
   Serial.println(RunInfo);
   }
 
@@ -165,13 +165,17 @@ void loop() {
   heartBeat();
   while(Serial.available()) {
     String cmd = Serial.readString();// read the incoming data as string
+    cmd.trim(); // try to remove symbols
     String letter = cmd.substring(1,2);
+    
     if (cmd == "RUN") { MotorRun(); } 
     else if (letter == "T") { setMotorDelayTime(cmd); } 
     else if (cmd == "CW" || cmd == "CCW") { setMotorDirection(cmd);  } 
     else if (letter == "S") {  setMotorStepsByRun(cmd); }
     else if (cmd == "INFO") { current_info(); }  
-    else Serial.print("Error: command " + cmd + " not detected");
+    else {
+          String message = "Error: command " + cmd + " not detected. Letter is " + letter;
+          Serial.print(message);
+         }
+    }
   } 
-}
-
