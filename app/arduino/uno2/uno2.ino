@@ -1,11 +1,11 @@
 // передаточное отношение шестерни
 const int GEAR = 8;
-
+// chmod a+rw /dev/ttyACM0 to work with... 
 // число оборотов шагового двигателя на один поворот платформы
 const int MOTOR_STEPS_REVOLUTION = 1600;
 
 //число шагов шагового двигателя для пуска, останова
-const int STEP_MOTOR_TAIL = 100; 
+const int STEP_MOTOR_TAIL = 50; 
 // Шаг двигателя 
 
 const byte STEP_PIN = 4;
@@ -28,6 +28,8 @@ int steps = 50; //число микрошагов по умолчанию за �
 
 int delay_time = 8; //задержка по умолчанию 
 
+int k_time = 2; //coef for start stop
+
 int timer = 0;
 
 int HEART_BEAT_INTERVAL = 10000;
@@ -42,7 +44,7 @@ int HEART_BEAT_INTERVAL = 10000;
 
 void setMotorDelayTime(String command)
   {
-        delay_time = command.substring(2).toInt();
+        delay_time = command.substring(1).toInt();
         if (delay_time < 2) delay_time = 2;
         if (delay_time > 500) delay_time = 500;
         String DelayInfo = "Delay_time: " + String(delay_time);
@@ -51,7 +53,7 @@ void setMotorDelayTime(String command)
   
 void setMotorStepsByRun(String command)
   {
-    steps = command.substring(2).toInt();
+    steps = command.substring(1).toInt();
     if (steps < 1) steps = 1;
     if (steps > MOTOR_STEPS_REVOLUTION * GEAR) steps = MOTOR_STEPS_REVOLUTION * GEAR;
     String StepInfo = "Steps: " + String(steps);
@@ -80,13 +82,14 @@ void MotorRun()
     {
       //плавный пуск останов за число шагов step_motor_tail
       int delay_time_total = delay_time;
-      if (i < STEP_MOTOR_TAIL) delay_time_total += (STEP_MOTOR_TAIL - i) * delay_time;
-      if (i > steps - STEP_MOTOR_TAIL) delay_time_total += (i + STEP_MOTOR_TAIL - steps) * delay_time;
+      if (i < STEP_MOTOR_TAIL) delay_time_total += (STEP_MOTOR_TAIL - i) * k_time;
+      if (i > steps - STEP_MOTOR_TAIL) delay_time_total += (i + STEP_MOTOR_TAIL - steps) * k_time;
       
       digitalWrite(STEP_PIN, HIGH);
       delay(delay_time_total);
       digitalWrite(STEP_PIN, LOW);
       delay(delay_time_total);
+      Serial.print("+"); //just one step
     }      
 //  digitalWrite(ENABLE_PIN, LOW);
   analogWrite(ENABLE_PIN, 100); //Блокировка шагового двигателя
@@ -166,7 +169,7 @@ void loop() {
   while(Serial.available()) {
     String cmd = Serial.readString();// read the incoming data as string
     cmd.trim(); // try to remove symbols
-    String letter = cmd.substring(1,2);
+    String letter = cmd.substring(0,1);
     
     if (cmd == "RUN") { MotorRun(); } 
     else if (letter == "T") { setMotorDelayTime(cmd); } 
