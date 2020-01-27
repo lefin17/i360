@@ -10,5 +10,7 @@ motor = Motor(20, 50, "CCW")
 
 print (motor.speed)
 
-a = motor.serial_ports()
-print (a)
+# a = motor.serial_ports()
+
+motor.connect()
+

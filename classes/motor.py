@@ -1,5 +1,7 @@
 import serial 
 import time
+import sys
+import glob 
 
 class Motor:
 
@@ -7,7 +9,7 @@ class Motor:
 # put some settings to motor such as speed, direction, steps to start and stops, connection speed  
     speed = 8
     delay = 8
-    serial_port = "TTY" #we need to define correct and choose which one is correct
+    serial_port = "/dev/ttyACM0" #we need to define correct and choose which one is correct
     connection_speeds = ['1200','2400', '4800', '9600', '19200', '38400', '57600', '115200']
     connection_speed = 9600
     realport = None
@@ -21,30 +23,33 @@ class Motor:
         self.direction = self.directions.get(direction, "CCW")
 
 
-    def set_param(self)
+    def set_param(self):
         self.set_delay(self.delay)
         self.set_steps(self.steps)
         self.set_direction(self.direction)
         self.read_param()
 
 
-    def read_param(self)
+    def read_param(self):
         #get some info from controller (values of variables)
         self.send("INFO");
 
 
-    def set_serial_port(self, serial_port)
+    def set_serial_port(self, serial_port):
         self.serial_port = serial_port
  
 
     def connect(self):
         try:
             self.realport = serial.Serial(self.serial_port, int(self.connection_speed))
-            time.sleep(2)
+            time.sleep(1)
             connected = True
             print ("Arduino connected")
+            self.realport.write(b'start');
+            time.sleep(5)
             while self.realport.inWaiting() > 0: 
-                print self.realport.readline() #get info from arduino
+                print (self.realport.readline()) #get info from arduino
+      
         except Exception as e:
             print(e)
 
@@ -65,45 +70,47 @@ class Motor:
         return False
 
 
-    def make_step(self)
+    def make_step(self):
         #basic functional of this module
         self.send("RUN") #make the step with current direction by needed steps and delay
         time.sleep((self.delay * self.steps / 1000) + 1) #wail till it will stop + 1 second
         while self.realport.inWaiting() > 0:
-            print self.realport.readline()
+            print (self.realport.readline())
 
 
-    def set_delay(self, delay)
+    def set_delay(self, delay):
     # задержка между микрошагами шагового двигателя при установившемся движении
         self.delay = delay
-        if res = self.send("T" + self.delay):
-            print res
+        res = self.send("T" + self.delay)
+        print (res)
 
 
-    def set_steps(self, steps)
+    def set_steps(self, steps):
         # число шагов шагового двигателя при одном шаге поворота платформы
         self.steps = steps
-        if res = self.send("S" + self.steps): 
-            print res 
+        res = self.send("S" + self.steps) 
+        print (res) 
 
 
-    def set_direction(self, direction)
+    def set_direction(self, direction):
         # Определение направление вращения платформы
         self.direction = direction
-        if res = self.send(direction): #direction { "CW" || "CCW" } 
-            print res
+        res = self.send(direction) #direction { "CW" || "CCW" } 
+        print (res)
 
     
-    def serial_ports():
+    def serial_ports(self):
+    #       global sys, glob
     # info about which port for arduino we can use
-    """ https://stackoverflow.com/users/300783/thomas
-        Lists serial port names
-
-        :raises EnvironmentError:
-            On unsupported or unknown platforms
-        :returns:
-            A list of the serial ports available on the system
-    """
+    # 
+    #    https://stackoverflow.com/users/300783/thomas
+    #    Lists serial port names
+    #
+    #    :raises EnvironmentError:
+    #        On unsupported or unknown platforms
+    #    :returns:
+    #        A list of the serial ports available on the system
+    #
         if sys.platform.startswith('win'):
             ports = ['COM%s' % (i + 1) for i in range(256)]
         elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):

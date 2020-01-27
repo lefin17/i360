@@ -22,6 +22,8 @@ const byte ENABLE_PIN = 3;
 
 // String cmd;
 
+int direction = 0; //direction pin turned off by default
+
 int steps = 50; //число микрошагов по умолчанию за один оборот
 
 int delay_time = 8; //задержка по умолчанию 
@@ -62,7 +64,7 @@ void setMotorDirection(String command)
       digitalWrite(DIRECTION_PIN, HIGH);
     }
     else
-    digitalWrite(DIRTCTION_PIN, LOW);
+    digitalWrite(DIRECTION_PIN, LOW);
     Serial.println("Direction: " + command);
   }
   
@@ -113,6 +115,10 @@ void setup() {
   //подключение к рабочему месту    
   Serial.begin(9600);
   delay(10);
+  digitalWrite('ENABLE_PIN', LOW);
+
+  digitalWrite('STEP_PIN', LOW);
+//  
   info();
 }
 
@@ -125,17 +131,17 @@ void info() {
   Serial.println("CCW - Direction contr clock watch");
   Serial.println("S[steps] - number of microsteps of stepper motor to next stop");
   Serial.println("Default steps: " + steps);
-  Serial.println("Default delay_time: " + delay_time + " ms");
+  Serial.println("Default delay_time: " + String(delay_time) + " ms");
   Serial.println("Quarter of stepper rotation is a soft start and stop system");
   Serial.println("When Run over - you got message");
   Serial.println("dot heart beat system");
   delay(10);
 }
 
-void current_vars()
+void current_info()
     {
   Serial.println("Current steps in one run: " + steps);
-  Serial.println("current delay_time: " + delay_time + " ms");
+  Serial.println("current delay_time: " + String(delay_time) + " ms");
   Serial.println("Current direction: " + direction);
   delay(10);
 }
@@ -145,7 +151,7 @@ void loop() {
   while(Serial.available()) {
     String cmd = Serial.readString();// read the incoming data as string
     String letter = cmd.substring(1,2);
-    if (cmd == "RUN") { MotorStep(); } 
+    if (cmd == "RUN") { MotorRun(); } 
     else if (letter == "T") { setMotorDelayTime(cmd); } 
     else if (cmd == "CW" || cmd == "CCW") { setMotorDirection(cmd);  } 
     else if (letter == "S") {  setMotorStepsByRun(cmd); }
