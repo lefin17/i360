@@ -45,7 +45,7 @@ void setMotorDelayTime(String command)
         delay_time = command.substring(2).toInt();
         if (delay_time < 2) delay_time = 2;
         if (delay_time > 500) delay_time = 500;
-        Serial.println('Delay_time: ' + delay_time);
+        Serial.println('Delay_time: ' + String(delay_time));
   }
   
 void setMotorStepsByRun(String command)
@@ -53,7 +53,7 @@ void setMotorStepsByRun(String command)
     steps = command.substring(2).toInt();
     if (steps < 1) steps = 1;
     if (steps > MOTOR_STEPS_REVOLUTION * GEAR) steps = MOTOR_STEPS_REVOLUTION * GEAR;
-    Serial.print("Steps: " + steps);
+    Serial.println("Steps: " + String(steps));
   }  
   
 void setMotorDirection(String command)
@@ -87,7 +87,7 @@ void MotorRun()
     }      
 //  digitalWrite(ENABLE_PIN, LOW);
   analogWrite(ENABLE_PIN, 100); //Блокировка шагового двигателя
-  Serial.println('RUN COMPLITE: T' + delay_time + 'S'+ steps);
+  Serial.println('RUN COMPLITE: T' + String(delay_time) + 'S'+ String(steps));
   }
 
 void heartBeat()
@@ -115,9 +115,9 @@ void setup() {
   //подключение к рабочему месту    
   Serial.begin(9600);
   delay(10);
-  digitalWrite('ENABLE_PIN', LOW);
+  digitalWrite(ENABLE_PIN, LOW);
 
-  digitalWrite('STEP_PIN', LOW);
+  digitalWrite(STEP_PIN, LOW);
 //  
   info();
 }
@@ -130,7 +130,7 @@ void info() {
   Serial.println("CV - Direction by clock watch");
   Serial.println("CCW - Direction contr clock watch");
   Serial.println("S[steps] - number of microsteps of stepper motor to next stop");
-  Serial.println("Default steps: " + steps);
+  Serial.println("Default steps: " + String(steps));
   Serial.println("Default delay_time: " + String(delay_time) + " ms");
   Serial.println("Quarter of stepper rotation is a soft start and stop system");
   Serial.println("When Run over - you got message");
@@ -140,7 +140,7 @@ void info() {
 
 void current_info()
     {
-  Serial.println("Current steps in one run: " + steps);
+  Serial.println("Current steps in one run: " + String(steps));
   Serial.println("current delay_time: " + String(delay_time) + " ms");
   Serial.println("Current direction: " + direction);
   delay(10);
