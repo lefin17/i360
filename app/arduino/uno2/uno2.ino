@@ -7,13 +7,12 @@ const int MOTOR_STEPS_REVOLUTION = 1600;
 //число шагов шагового двигателя для пуска, останова
 const int STEP_MOTOR_TAIL = 50; 
 // Шаг двигателя 
-
 const byte STEP_PIN = 4;
+
 // Напрваление вращения
-
 const byte DIRECTION_PIN = 6;
-// Включение двигателя
 
+// Включение двигателя
 const byte ENABLE_PIN = 3;
 
 // переменная плавного пуска, останова - каждый раз скорость за каждый шаг в уменьшается при торможении, 
@@ -26,7 +25,7 @@ int direction = 0; //direction pin turned off by default
 
 int steps = 50; //число микрошагов по умолчанию за один оборот
 
-int delay_time = 8; //задержка по умолчанию 
+int delay_time = 3; //задержка по умолчанию 
 
 int k_time = 2; //coef for start stop
 
@@ -82,8 +81,8 @@ void MotorRun()
     {
       //плавный пуск останов за число шагов step_motor_tail
       int delay_time_total = delay_time;
-      if (i < STEP_MOTOR_TAIL) delay_time_total += (STEP_MOTOR_TAIL - i) * k_time;
-      if (i > steps - STEP_MOTOR_TAIL) delay_time_total += (i + STEP_MOTOR_TAIL - steps) * k_time;
+   //   if (i < STEP_MOTOR_TAIL) delay_time_total += (STEP_MOTOR_TAIL - i) * k_time;
+   //   if (i > steps - STEP_MOTOR_TAIL) delay_time_total += (i + STEP_MOTOR_TAIL - steps) * k_time;
       
       digitalWrite(STEP_PIN, HIGH);
       delay(delay_time_total);
@@ -91,8 +90,10 @@ void MotorRun()
       delay(delay_time_total);
       Serial.print("+"); //just one step
     }      
-//  digitalWrite(ENABLE_PIN, LOW);
+  
   analogWrite(ENABLE_PIN, 100); //Блокировка шагового двигателя
+  delay(100); //100ms block
+  digitalWrite(ENABLE_PIN, LOW);
   String RunInfo = "RUN COMPLITE: T" + String(delay_time) + "S"+ String(steps);
   Serial.println(RunInfo);
   }
