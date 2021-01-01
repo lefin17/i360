@@ -1,0 +1,1 @@
+gphoto2 --filename './photos/need.jpg' --capture-image-and-download

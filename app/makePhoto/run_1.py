@@ -1,4 +1,4 @@
-APP = "/home/lefin/work/i360/"
+APP = "./"
 
 import sys
 import os
